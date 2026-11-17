@@ -1,0 +1,28 @@
+{
+  "name": "mentorlagbe-server",
+  "version": "1.0.0",
+  "description": "MentorLagbe Smart Tuition & Mentorship Platform Express & MongoDB Server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node seed.js"
+  },
+  "keywords": ["mentorlagbe", "tuition", "express", "mongodb", "nextjs", "stripe"],
+  "author": "EHMahi9",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.12.0",
+    "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
