@@ -126,7 +126,11 @@ router.post('/verify-session', verifyToken, async (req, res) => {
           });
         }
       } catch (err) {
-        console.warn('Could not verify session with Stripe API, using metadata:', err.message);
+        console.error('Stripe session retrieval failed:', err.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Unable to verify Stripe checkout session: ' + err.message,
+        });
       }
     }
 

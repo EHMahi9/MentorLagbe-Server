@@ -159,14 +159,6 @@ router.patch('/tuitions/:id/status', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid ID format.' });
     }
 
-    // Prevent admin self-demotion lockout
-    if (req.user._id.toString() === id && role !== 'admin') {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot demote your own administrator account.',
-      });
-    }
-
     const { tuitionsCollection } = getCollections();
     const result = await tuitionsCollection.updateOne(
       { _id: new ObjectId(id) },

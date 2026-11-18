@@ -195,10 +195,18 @@ router.post('/', verifyToken, verifyTutor, async (req, res) => {
       description,
     } = req.body;
 
-    if (!title || !subject || !classLevel || !monthlyFee || !description) {
+    if (!title || !subject || !classLevel || monthlyFee === undefined || !description) {
       return res.status(400).json({
         success: false,
         message: 'Please fill in all required fields.',
+      });
+    }
+
+    const numericFee = Number(monthlyFee);
+    if (isNaN(numericFee) || numericFee <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Monthly fee must be a valid positive number.',
       });
     }
 
@@ -287,6 +295,16 @@ router.put('/:id', verifyToken, verifyTutor, async (req, res) => {
       bannerImage,
       description,
     } = req.body;
+
+    if (monthlyFee !== undefined) {
+      const numFee = Number(monthlyFee);
+      if (isNaN(numFee) || numFee <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Monthly fee must be a valid positive number.',
+        });
+      }
+    }
 
     const updateDoc = {
       $set: {

@@ -189,6 +189,12 @@ router.post('/google', async (req, res) => {
     }
 
     const payload = await googleRes.json();
+
+    // Verify token audience to prevent cross-app token substitution
+    if (process.env.GOOGLE_CLIENT_ID && payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({ success: false, message: 'Google token audience mismatch.' });
+    }
+
     const cleanEmail = payload.email.toLowerCase().trim();
 
     const { usersCollection } = getCollections();
