@@ -21,7 +21,12 @@ router.post('/create-checkout-session', verifyToken, async (req, res) => {
     const isTutor = planType === 'tutor' || role === 'tutor';
     const amount = isTutor ? 1500 : 1000; // in cents ($15 or $10)
     const planName = isTutor ? 'Pro Tutor Plan' : 'Pro Student Plan';
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    // Automatically detect live frontend origin or fallback to production live domain
+    const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+    const clientUrl =
+      (origin && !origin.includes('localhost') ? origin : null) ||
+      (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('localhost') ? process.env.CLIENT_URL : null) ||
+      (origin ? origin : 'https://mentorlagbe-five.vercel.app');
 
     // If Stripe key is configured, create live Stripe Checkout Session
     if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('placeholder')) {
