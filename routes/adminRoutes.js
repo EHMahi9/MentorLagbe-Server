@@ -89,6 +89,14 @@ router.patch('/users/:id/role', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid ID format.' });
     }
 
+    // Prevent admin self-demotion lockout
+    if (req.user._id.toString() === id && role !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot demote your own administrator account.',
+      });
+    }
+
     const { usersCollection } = getCollections();
     const result = await usersCollection.updateOne(
       { _id: new ObjectId(id) },
@@ -149,6 +157,14 @@ router.patch('/tuitions/:id/status', async (req, res) => {
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
+
+    // Prevent admin self-demotion lockout
+    if (req.user._id.toString() === id && role !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot demote your own administrator account.',
+      });
     }
 
     const { tuitionsCollection } = getCollections();

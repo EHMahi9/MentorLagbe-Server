@@ -36,6 +36,14 @@ router.post('/', verifyToken, verifyStudent, async (req, res) => {
       });
     }
 
+    // Prevent self-application (cannot apply to own tuition post)
+    if (tuition.tutorEmail === req.user.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot apply to your own tuition listing.',
+      });
+    }
+
     // Prevent duplicate application from same student for same tuition (Core Requirement)
     const existingApp = await applicationsCollection.findOne({
       tuitionId: tuition._id.toString(),

@@ -62,8 +62,8 @@ router.post('/create-checkout-session', verifyToken, async (req, res) => {
         url: session.url,
       });
     } else {
-      // Test / Sandbox Mode Fallback when Stripe keys are in test mode
-      const mockSessionId = `cs_test_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      // Test / Sandbox Mode Fallback when Stripe keys are in placeholder mode
+      const mockSessionId = `cs_test_mock_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       return res.status(200).json({
         success: true,
         sessionId: mockSessionId,
@@ -107,12 +107,12 @@ router.post('/verify-session', verifyToken, async (req, res) => {
     let finalPlanName = planName || (req.user.role === 'tutor' ? 'Pro Tutor Plan' : 'Pro Student Plan');
     let transactionId = `txn_${Date.now()}`;
 
-    // If live Stripe session, verify from Stripe API
-    if (
-      process.env.STRIPE_SECRET_KEY &&
-      !process.env.STRIPE_SECRET_KEY.includes('placeholder') &&
-      !sessionId.startsWith('cs_test_')
-    ) {
+    // If live Stripe configured, verify genuine Stripe session (both live and cs_test_ sandbox sessions)
+    const isOfflineMockSession = sessionId.includes('_mock_') || sessionId.startsWith('cs_dummy_');
+    const hasLiveStripeKey =
+      process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('placeholder');
+
+    if (hasLiveStripeKey && !isOfflineMockSession) {
       try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
         if (session.payment_status === 'paid') {

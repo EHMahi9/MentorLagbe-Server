@@ -5,6 +5,11 @@ import { verifyToken, verifyTutor } from '../middlewares/auth.js';
 
 const router = express.Router();
 
+// Helper to escape regex special characters to prevent ReDoS / search crashes
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/tuitions (Public Browse with Search, Filter & Server-side Pagination)
 router.get('/', async (req, res) => {
   try {
@@ -24,20 +29,23 @@ router.get('/', async (req, res) => {
       isActive: true,
     };
 
-    // Server-Side Search (Challenge 1)
+    // Server-Side Search (Challenge 1) with ReDoS protection
     if (search && search.trim() !== '') {
-      const searchRegex = new RegExp(search.trim(), 'i');
+      const safeSearch = escapeRegex(search.trim());
+      const searchRegex = new RegExp(safeSearch, 'i');
       query.$or = [{ title: searchRegex }, { subject: searchRegex }, { location: searchRegex }];
     }
 
     // Filter by Subject
     if (subject && subject !== 'All') {
-      query.subject = new RegExp(`^${subject.trim()}$`, 'i');
+      const safeSubject = escapeRegex(subject.trim());
+      query.subject = new RegExp(`^${safeSubject}$`, 'i');
     }
 
     // Filter by Class Level
     if (classLevel && classLevel !== 'All') {
-      query.classLevel = new RegExp(`^${classLevel.trim()}$`, 'i');
+      const safeClass = escapeRegex(classLevel.trim());
+      query.classLevel = new RegExp(`^${safeClass}$`, 'i');
     }
 
     // Filter by Mode (Online / Offline)
@@ -200,6 +208,7 @@ router.post('/', verifyToken, verifyTutor, async (req, res) => {
     if (req.user.plan !== 'pro') {
       const existingCount = await tuitionsCollection.countDocuments({
         tutorEmail: req.user.email,
+        isActive: true,
       });
 
       if (existingCount >= 2) {
@@ -207,7 +216,7 @@ router.post('/', verifyToken, verifyTutor, async (req, res) => {
           success: false,
           limitReached: true,
           message:
-            'Free Plan allows a maximum of 2 tuition posts. Please upgrade to the Pro Plan for unlimited posts and priority listing.',
+            'Free Plan allows a maximum of 2 active tuition posts. Please upgrade to the Pro Plan for unlimited posts and priority listing.',
         });
       }
     }
