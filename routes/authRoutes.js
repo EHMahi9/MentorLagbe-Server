@@ -174,4 +174,74 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// POST /api/auth/google
+router.post('/google', async (req, res) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) {
+      return res.status(400).json({ success: false, message: 'Google credential token is required.' });
+    }
+
+    // Verify token with Google API
+    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!googleRes.ok) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired Google credential.' });
+    }
+
+    const payload = await googleRes.json();
+    const cleanEmail = payload.email.toLowerCase().trim();
+
+    const { usersCollection } = getCollections();
+    let user = await usersCollection.findOne({ email: cleanEmail });
+
+    if (!user) {
+      // Create new user from Google profile
+      const newUser = {
+        name: payload.name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        image: payload.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name || 'User')}&background=0D9488&color=fff`,
+        role: role === 'tutor' ? 'tutor' : 'student',
+        plan: 'free',
+        googleId: payload.sub,
+        emailVerified: payload.email_verified || true,
+        phone: '',
+        bio: 'Joined via Google Sign-In',
+        createdAt: new Date(),
+      };
+
+      const result = await usersCollection.insertOne(newUser);
+      user = { _id: result.insertedId, ...newUser };
+    }
+
+    const userPayload = {
+      _id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      plan: user.plan || 'free',
+      image: user.image,
+      bio: user.bio,
+    };
+
+    const token = jwt.sign(
+      { id: userPayload._id, email: userPayload.email, role: userPayload.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged in with Google successfully.',
+      token,
+      user: userPayload,
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during Google authentication.',
+    });
+  }
+});
+
 export default router;
